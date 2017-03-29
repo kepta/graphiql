@@ -15,6 +15,7 @@ import {
   print,
 } from 'graphql';
 
+import JSONTree from 'react-json-tree';
 import { ExecuteButton } from './ExecuteButton';
 import { ToolbarButton } from './ToolbarButton';
 import { ToolbarGroup } from './ToolbarGroup';
@@ -60,7 +61,9 @@ export class GraphiQL extends React.Component {
     onEditVariables: PropTypes.func,
     onEditOperationName: PropTypes.func,
     onToggleDocs: PropTypes.func,
-    getDefaultFieldNames: PropTypes.func
+    getDefaultFieldNames: PropTypes.func,
+    loading: PropTypes.element.isRequired,
+    footer: PropTypes.element
   }
 
   constructor(props) {
@@ -195,7 +198,6 @@ export class GraphiQL extends React.Component {
     this.codeMirrorSizer.updateSizes([
       this.queryEditorComponent,
       this.variableEditorComponent,
-      this.resultComponent,
     ]);
   }
 
@@ -213,22 +215,27 @@ export class GraphiQL extends React.Component {
 
   render() {
     const children = React.Children.toArray(this.props.children);
+    // <div className="topBarWrap">
+    //   <div className="topBar">
+    //     {logo}
+    //     <ExecuteButton
+    //       isRunning={Boolean(this.state.subscription)}
+    //       onRun={this.handleRunQuery}
+    //       onStop={this.handleStopQuery}
+    //       operations={this.state.operations}
+    //     />
+    //     {toolbar}
+    //   </div>
+    //   {
+    //     !this.state.docExplorerOpen &&
+    //     <button
+    //       className="docExplorerShow"
+    //       onClick={this.handleToggleDocs}>
+    //       {'Docs'}
+    //     </button>
+    //   }
+    // </div>
 
-    const logo =
-      find(children, child => child.type === GraphiQL.Logo) ||
-      <GraphiQL.Logo />;
-
-    const toolbar =
-      find(children, child => child.type === GraphiQL.Toolbar) ||
-      <GraphiQL.Toolbar>
-        <ToolbarButton
-          onClick={this.handlePrettifyQuery}
-          title="Prettify Query"
-          label="Prettify"
-        />
-      </GraphiQL.Toolbar>;
-
-    const footer = find(children, child => child.type === GraphiQL.Footer);
 
     const queryWrapStyle = {
       WebkitFlex: this.state.editorFlex,
@@ -250,26 +257,6 @@ export class GraphiQL extends React.Component {
     return (
       <div className="graphiql-container">
         <div className="editorWrap">
-          <div className="topBarWrap">
-            <div className="topBar">
-              {logo}
-              <ExecuteButton
-                isRunning={Boolean(this.state.subscription)}
-                onRun={this.handleRunQuery}
-                onStop={this.handleStopQuery}
-                operations={this.state.operations}
-              />
-              {toolbar}
-            </div>
-            {
-              !this.state.docExplorerOpen &&
-              <button
-                className="docExplorerShow"
-                onClick={this.handleToggleDocs}>
-                {'Docs'}
-              </button>
-            }
-          </div>
           <div
             ref={n => { this.editorBarComponent = n; }}
             className="editorBar"
@@ -300,19 +287,6 @@ export class GraphiQL extends React.Component {
                   onRunQuery={this.handleEditorRunQuery}
                 />
               </div>
-            </div>
-            <div className="resultWrap">
-              {
-                this.state.isWaitingForResponse &&
-                <div className="spinner-container">
-                  <div className="spinner" />
-                </div>
-              }
-              <ResultViewer
-                ref={c => { this.resultComponent = c; }}
-                value={this.state.response}
-              />
-              {footer}
             </div>
           </div>
         </div>
@@ -359,7 +333,6 @@ export class GraphiQL extends React.Component {
   refresh() {
     this.queryEditorComponent.getCodeMirror().refresh();
     this.variableEditorComponent.getCodeMirror().refresh();
-    this.resultComponent.getCodeMirror().refresh();
   }
 
   /**
@@ -444,9 +417,7 @@ export class GraphiQL extends React.Component {
         const queryFacts = getQueryFacts(schema, this.state.query);
         this.setState({ schema, ...queryFacts });
       } else {
-        const responseString = typeof result === 'string' ?
-          result :
-          JSON.stringify(result, null, 2);
+        const responseString = result;
         this.setState({
           // Set schema to `null` to explicitly indicate that no schema exists.
           schema: null,
@@ -583,7 +554,7 @@ export class GraphiQL extends React.Component {
           if (queryID === this._editorQueryID) {
             this.setState({
               isWaitingForResponse: false,
-              response: JSON.stringify(result, null, 2),
+              response: result,
             });
           }
         }
@@ -752,22 +723,23 @@ export class GraphiQL extends React.Component {
 
   _didClickDragBar(event) {
     // Only for primary unmodified clicks
-    if (event.button !== 0 || event.ctrlKey) {
-      return false;
-    }
-    let target = event.target;
-    // We use codemirror's gutter as the drag bar.
-    if (target.className.indexOf('CodeMirror-gutter') !== 0) {
-      return false;
-    }
+    return false;
+    // if (event.button !== 0 || event.ctrlKey) {
+    //   return false;
+    // }
+    // let target = event.target;
+    // // We use codemirror's gutter as the drag bar.
+    // if (target.className.indexOf('CodeMirror-gutter') !== 0) {
+    //   return false;
+    // }
     // Specifically the result window's drag bar.
-    const resultWindow = ReactDOM.findDOMNode(this.resultComponent);
-    while (target) {
-      if (target === resultWindow) {
-        return true;
-      }
-      target = target.parentNode;
-    }
+    // const resultWindow = ReactDOM.findDOMNode(this.resultComponent);
+    // while (target) {
+    //   if (target === resultWindow) {
+    //     return true;
+    //   }
+    //   target = target.parentNode;
+    // }
     return false;
   }
 
