@@ -62,7 +62,6 @@ export class GraphiQL extends React.Component {
     onEditOperationName: PropTypes.func,
     onToggleDocs: PropTypes.func,
     getDefaultFieldNames: PropTypes.func,
-    loading: PropTypes.element.isRequired,
     footer: PropTypes.element
   }
 
